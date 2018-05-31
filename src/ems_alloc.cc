@@ -29,7 +29,7 @@
  |    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.             |
  |                                                                             |
  +-----------------------------------------------------------------------------*/
-#include "ems_alloc.h"
+#include <ems/ems_alloc.h>
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>

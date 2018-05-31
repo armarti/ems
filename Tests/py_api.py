@@ -34,7 +34,10 @@
 import sys
 import os
 import time
-sys.path.append("../Python/ems/")  # Path to EMS Python Module
+import os
+
+THIS_DIR = os.path.realpath(os.path.dirname(__file__))
+sys.path.append(os.path.realpath(os.path.join(THIS_DIR, "../Python/ems")))
 import ems
 
 nprocs = 12

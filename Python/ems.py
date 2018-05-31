@@ -46,10 +46,11 @@ sudo apt-get install libffi-dev
 sudo pip install cffi
 sudo apt-get install python3-cffi
 """
+THIS_DIR = os.path.realpath(os.path.dirname(__file__))
 
 
 ffi = FFI()
-ems_proto = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../src/ems_proto.h"))
+ems_proto = os.path.realpath(os.path.join(THIS_DIR, "../include/ems/ems_proto.h"))
 cpp_out = subprocess.check_output(["cpp", ems_proto]).decode("utf-8")
 prototypes = cpp_out.split("\n")
 headerLines = []

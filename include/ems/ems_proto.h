@@ -29,7 +29,7 @@
  |    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.             |
  |                                                                             |
  +-----------------------------------------------------------------------------*/
-#include "ems_types.h"
+#include <ems/ems_types.h>
 
 // ---------------------------------------------------------------------------------
 //  Non-exposed API functions

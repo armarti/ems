@@ -50,7 +50,7 @@
 #endif
 #include <sched.h>
 
-#include "ems_alloc.h"
+#include <ems/ems_alloc.h>
 
 //==================================================================
 // EMS Full/Empty Tag States
@@ -207,6 +207,6 @@ extern int EMSmyID;   // EMS Thread ID
 
 #define EMSisMapped (bufInt64[EMScbData(EMS_ARR_MAPBOT)]*(int64_t)EMSwordSize != bufInt64[EMScbData(EMS_ARR_MALLOCBOT)])
 
-#include "ems_proto.h"
+#include <ems/ems_proto.h>
 
 #endif //EMSPROJ_EMS_H

@@ -29,6 +29,8 @@
 # |    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.             |
 # |                                                                             |
 # +-----------------------------------------------------------------------------*
+CXXFLAGS=-I./include
+
 all: py3 node tests help_notice 
 
 help:
@@ -63,7 +65,7 @@ test_py2: py2
 node: build/Release/ems.node
 
 build/Release/ems.node:
-	node-gyp rebuild
+	CXXFLAGS=-I./include node-gyp rebuild
 
 py: py2 py3
 

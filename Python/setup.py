@@ -31,11 +31,11 @@
  +-----------------------------------------------------------------------------+
 """
 from distutils.core import setup, Extension
+from distutils.command.install_headers import install_headers
 import sys
 import os
 
-# Path to C library source code
-src_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '../src'))
+THIS_DIR = os.path.realpath(os.path.dirname(__file__))
 
 # OS Specific link flags
 link_args = []
@@ -49,7 +49,8 @@ elif sys.platform == "darwin":
 else:
     pass
 
-setup(
+include_dir = os.path.realpath(os.path.join(THIS_DIR, '../include'))
+dist = setup(
     name="ems",
     version="1.4.0",
     py_modules=["ems"],
@@ -67,9 +68,12 @@ setup(
     url='https://github.com/SyntheticSemantics/ems',
 
     ext_modules=[Extension('libems.so',
-                           [os.path.join(src_path, filename) for filename in
+                           [os.path.realpath(os.path.join(THIS_DIR, '../src', filename)) for filename in
                                ['collectives.cc', 'ems.cc', 'ems_alloc.cc', 'loops.cc', 'primitives.cc', 'rmw.cc']],
-                           extra_link_args=link_args
+                           extra_link_args=link_args,
+                           include_dirs=[include_dir],
+                           extra_compile_args=["-I" + include_dir],
+                           #install_headers=[include_dir],
                            )],
     long_description='Persistent Shared Memory and Parallel Programming Model',
     keywords=["non volatile memory",
@@ -90,3 +94,5 @@ setup(
               "Extended Memory Semantics",
               "EMS"]
 )
+
+#install_headers()

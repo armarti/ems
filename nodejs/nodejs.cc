@@ -29,9 +29,9 @@
  |    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.             |
  |                                                                             |
  +-----------------------------------------------------------------------------*/
-#include "nodejs.h"
-#include "../src/ems.h"
-#include "../src/ems_types.h"
+#include <ems/nodejs.h>
+#include <ems/ems.h>
+#include <ems/ems_types.h>
 
 /**
  * Convert a NAN object to an EMS object stored on the stack

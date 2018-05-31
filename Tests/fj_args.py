@@ -34,7 +34,10 @@
 """
 import sys
 import time
-sys.path.append("../Python/")
+import os
+
+THIS_DIR = os.path.realpath(os.path.dirname(__file__))
+sys.path.append(os.path.realpath(os.path.join(THIS_DIR, "../Python")))
 
 nprocs = 2
 nelem = 1000

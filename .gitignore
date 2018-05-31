@@ -5,3 +5,5 @@ node_modules/
 .vagrant
 .local
 Tests/EMSthreadStub.js
+dist/
+MANIFEST

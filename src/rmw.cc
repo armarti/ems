@@ -29,7 +29,7 @@
  |    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.             |
  |                                                                             |
  +-----------------------------------------------------------------------------*/
-#include "ems.h"
+#include <ems/ems.h>
 
 //==================================================================
 //  Fetch and Add Atomic Memory Operation
