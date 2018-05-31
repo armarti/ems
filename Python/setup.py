@@ -32,16 +32,20 @@
 """
 from distutils.core import setup, Extension
 import sys
+import os
 
 # Path to C library source code
-src_path = '../src/'
+src_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '../src'))
 
 # OS Specific link flags
 link_args = []
 if sys.platform == "linux" or sys.platform == "linux2":
     link_args.append("-lrt")
 elif sys.platform == "darwin":
-    pass
+    if sys.version_info[0] >= 3:
+        link_args.append("-stdlib=libc++")
+    else:
+        pass
 else:
     pass
 
@@ -63,7 +67,7 @@ setup(
     url='https://github.com/SyntheticSemantics/ems',
 
     ext_modules=[Extension('libems.so',
-                           [src_path + filename for filename in
+                           [os.path.join(src_path, filename) for filename in
                                ['collectives.cc', 'ems.cc', 'ems_alloc.cc', 'loops.cc', 'primitives.cc', 'rmw.cc']],
                            extra_link_args=link_args
                            )],

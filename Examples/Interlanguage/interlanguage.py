@@ -48,8 +48,12 @@
 
 import time
 import sys
+import os
+
+ems_python_module_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '../../Python'))
+sys.path.append(ems_python_module_dir)
+
 import random
-sys.path.append("../../Python/")
 import ems
 
 # Initialize EMS: 1 process, no thread-core affinity, user provided parallelism

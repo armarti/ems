@@ -49,7 +49,6 @@ help_notice:
 
 test: test_js test_py
 
-
 test_js: node
 	npm test
 
@@ -69,10 +68,10 @@ build/Release/ems.node:
 py: py2 py3
 
 py3:
-	(cd Python; sudo rm -rf Python/build Python/ems.egg-info Python/dist; sudo python3 ./setup.py build --build-temp=./ install)
+	(cd Python; rm -rf Python/build Python/ems.egg-info Python/dist; python3 ./setup.py build --build-temp=./ install)
 
 py2:
-	(cd Python; sudo rm -rf Python/build Python/ems.egg-info Python/dist; sudo python ./setup.py build --build-temp=./ install)
+	(cd Python; rm -rf Python/build Python/ems.egg-info Python/dist; python ./setup.py build --build-temp=./ install)
 
 clean: clean_js clean_py3 clean_py2
 

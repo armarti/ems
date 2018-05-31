@@ -49,7 +49,8 @@ sudo apt-get install python3-cffi
 
 
 ffi = FFI()
-cpp_out = subprocess.check_output(["cpp", "../src/ems_proto.h"]).decode("utf-8")
+ems_proto = os.path.realpath(os.path.join(os.path.dirname(__file__), "../../src/ems_proto.h"))
+cpp_out = subprocess.check_output(["cpp", ems_proto]).decode("utf-8")
 prototypes = cpp_out.split("\n")
 headerLines = []
 for line in prototypes:
@@ -71,11 +72,11 @@ for package_path in package_paths:
         packages = os.listdir(package_path)
         for package in packages:
             if package == "libems" and libems is None:
-                libems_path = package_path + "/libems/"
+                libems_path = os.path.join(package_path, "libems")
                 files = os.listdir(libems_path)
                 for file in files:
                     if file[-3:] == ".so":  # TODO: Guessing it's the only .so
-                        fname = libems_path + file
+                        fname = os.path.join(libems_path, file)
                         libems = ffi.dlopen(fname)
                         break
     except:
