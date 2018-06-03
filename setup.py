@@ -31,25 +31,25 @@
  +-----------------------------------------------------------------------------+
 """
 from distutils.core import setup, Extension
-from distutils.command.install_headers import install_headers
 import sys
 import os
 
 THIS_DIR = os.path.realpath(os.path.dirname(__file__))
+SRC_DIR = os.path.realpath(os.path.join(THIS_DIR, '../src'))
+INCLUDE_DIR = os.path.realpath(os.path.join(THIS_DIR, '../src'))
 
 # OS Specific link flags
 link_args = []
 if sys.platform == "linux" or sys.platform == "linux2":
     link_args.append("-lrt")
 elif sys.platform == "darwin":
-    if sys.version_info[0] >= 3:
+    if sys.version_info[0] >= 2:
         link_args.append("-stdlib=libc++")
     else:
         pass
 else:
     pass
 
-include_dir = os.path.realpath(os.path.join(THIS_DIR, '../include'))
 dist = setup(
     name="ems",
     version="1.4.0",
@@ -67,13 +67,10 @@ dist = setup(
     # The project's main homepage.
     url='https://github.com/SyntheticSemantics/ems',
 
-    ext_modules=[Extension('libems.so',
-                           [os.path.realpath(os.path.join(THIS_DIR, '../src', filename)) for filename in
-                               ['collectives.cc', 'ems.cc', 'ems_alloc.cc', 'loops.cc', 'primitives.cc', 'rmw.cc']],
+    ext_modules=[Extension('libems',
+                           sources=[os.path.relpath(os.path.join(SRC_DIR, filename), THIS_DIR) for filename in os.listdir(SRC_DIR)],
                            extra_link_args=link_args,
-                           include_dirs=[include_dir],
-                           extra_compile_args=["-I" + include_dir],
-                           #install_headers=[include_dir],
+                           include_dirs=[os.path.relpath(INCLUDE_DIR, THIS_DIR)],
                            )],
     long_description='Persistent Shared Memory and Parallel Programming Model',
     keywords=["non volatile memory",
@@ -94,5 +91,3 @@ dist = setup(
               "Extended Memory Semantics",
               "EMS"]
 )
-
-#install_headers()
