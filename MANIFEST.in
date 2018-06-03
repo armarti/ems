@@ -1,0 +1,6 @@
+recursive-include include ems*.h
+recursive-include Examples/Interlanguage *
+recursive-include Tests *.py
+recursive-include Python *.py
+recursive-include src *.cc
+include README.md Makefile 

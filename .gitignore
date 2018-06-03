@@ -7,3 +7,8 @@ node_modules/
 Tests/EMSthreadStub.js
 dist/
 MANIFEST
+/.idea/
+/*.egg-info/
+/pip-tests/
+.conda*/
+.eggs/

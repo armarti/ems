@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
  +-----------------------------------------------------------------------------+
  |  Extended Memory Semantics (EMS)                            Version 1.4.1   |
@@ -30,31 +31,37 @@
  |                                                                             |
  +-----------------------------------------------------------------------------+
 """
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
 import sys
 import os
+import platform
+from glob import glob
+import shutil
 
-THIS_DIR = os.path.realpath(os.path.dirname(__file__))
-SRC_DIR = os.path.realpath(os.path.join(THIS_DIR, '../src'))
-INCLUDE_DIR = os.path.realpath(os.path.join(THIS_DIR, '../src'))
+PACKAGE_NAME = "ems" + "_test2"
+PACKAGE_VERSION = "1.4.1" + "4"
+REPO_ROOT_DIR = os.path.realpath(os.path.dirname(__file__))
+THIS_DIR = REPO_ROOT_DIR
+SRC_DIR = os.path.join(THIS_DIR, 'src')
+INCLUDE_DIR = os.path.join(THIS_DIR, 'include')
+MODULE_DIR = os.path.join(THIS_DIR, 'Python')
 
 # OS Specific link flags
 link_args = []
 if sys.platform == "linux" or sys.platform == "linux2":
     link_args.append("-lrt")
 elif sys.platform == "darwin":
-    if sys.version_info[0] >= 2:
-        link_args.append("-stdlib=libc++")
-    else:
-        pass
+    os.environ['MACOSX_DEPLOYMENT_TARGET'] = '.'.join(platform.mac_ver()[0].split('.')[:2])
+    link_args.append("-stdlib=libc++")
 else:
     pass
 
-dist = setup(
-    name="ems",
-    version="1.4.0",
-    py_modules=["ems"],
-    setup_requires=["cffi>=1.0.0"],
+setup(
+    name=PACKAGE_NAME,
+    version=PACKAGE_VERSION,
+    packages=[PACKAGE_NAME],
+    package_dir={PACKAGE_NAME: os.path.relpath(MODULE_DIR, THIS_DIR)},
+    setup_requires=["cffi>=1.0.0", "setuptools"],
     install_requires=["cffi>=1.0.0"],
 
     # Author details
@@ -67,27 +74,44 @@ dist = setup(
     # The project's main homepage.
     url='https://github.com/SyntheticSemantics/ems',
 
-    ext_modules=[Extension('libems',
-                           sources=[os.path.relpath(os.path.join(SRC_DIR, filename), THIS_DIR) for filename in os.listdir(SRC_DIR)],
-                           extra_link_args=link_args,
-                           include_dirs=[os.path.relpath(INCLUDE_DIR, THIS_DIR)],
-                           )],
+    data_files=[
+        ('include/ems', glob(os.path.join(THIS_DIR, 'include/ems/**ems*.h'))),
+    ],
+
+    ext_modules=[
+        Extension(
+            "{pkg}/lib{pkg}".format(pkg=PACKAGE_NAME),
+            sources=[os.path.relpath(os.path.join(SRC_DIR, src), THIS_DIR) for src in os.listdir(SRC_DIR)],
+            extra_link_args=link_args,
+            include_dirs=[os.path.relpath(INCLUDE_DIR, THIS_DIR)],
+        ),
+    ],
     long_description='Persistent Shared Memory and Parallel Programming Model',
-    keywords=["non volatile memory",
-              "NVM",
-              "NVMe",
-              "multithreading",
-              "multithreaded",
-              "parallel",
-              "parallelism",
-              "concurrency",
-              "shared memory",
-              "multicore",
-              "manycore",
-              "transactional memory",
-              "TM",
-              "persistent memory",
-              "pmem",
-              "Extended Memory Semantics",
-              "EMS"]
+    keywords=" ".join([
+        "nonvolatile memory",
+        "NVM",
+        "NVMe",
+        "multithreading",
+        "multithreaded",
+        "parallel",
+        "parallelism",
+        "concurrency",
+        "shared-memory",
+        "multicore",
+        "manycore",
+        "transactional-memory",
+        "TM",
+        "persistent-memory",
+        "pmem",
+        "Extended-Memory-Semantics",
+        "EMS",
+    ]),
+    classifiers=[  # https://pypi.org/classifiers/
+        "License :: OSI Approved :: BSD License",
+        "Programming Language :: C",
+        "Programming Language :: C++",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: JavaScript",
+    ],
 )

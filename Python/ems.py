@@ -39,6 +39,7 @@ import subprocess
 from multiprocessing import Process, Pipe
 from cffi import FFI
 import site
+from sysconfig import get_path
 
 """
 sudo apt-get install python-pip
@@ -50,7 +51,7 @@ THIS_DIR = os.path.realpath(os.path.dirname(__file__))
 
 
 ffi = FFI()
-ems_proto = os.path.realpath(os.path.join(THIS_DIR, "../include/ems/ems_proto.h"))
+ems_proto = os.path.join(os.path.dirname(get_path('include')), 'ems/ems_proto.h')
 cpp_out = subprocess.check_output(["cpp", ems_proto]).decode("utf-8")
 prototypes = cpp_out.split("\n")
 headerLines = []
