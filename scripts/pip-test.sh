@@ -2,7 +2,7 @@
 set -e
 
 PKG_NAME=$1
-PKG_NAME_WITH_DASH=$(echo $MODULE_NAME | sed 's/_/-/g')
+PKG_NAME_WITH_DASH=$(echo $PKG_NAME | sed 's/_/-/g')
 MODULE_NAME=$2
 USE_TEST_IDX=${3:-0}
 
@@ -38,7 +38,7 @@ SVR_PROC=-1
 function setup_local_idx() {
     PKG_DIR="$THIS_DIR/../dist/$PKG_NAME_WITH_DASH"
     ARCHIVE="$(ls "$THIS_DIR"/../dist/ | grep -E '\.tar\.gz|\.zip')"
-    echo "Creating \"$PKG_NAME_WITH_DASH\""
+    echo "Creating \"$PKG_DIR\""
     mkdir -p "$PKG_DIR"
     echo "Copying \"$THIS_DIR/../dist/$ARCHIVE\" to \"$PKG_DIR\""
     cp "$THIS_DIR/../dist/$ARCHIVE" "$PKG_DIR"/
@@ -55,7 +55,7 @@ function test_in_venv() {
     pynum=$1
     # test installing
     echo ">>> Testing install in Python${pynum} virtualenv"
-    virtualenv --always-copy --python=python${pynum} "$PY_TMPDIR/.venv${pynum}" && \
+    virtualenv --download --always-copy --python=python${pynum} "$PY_TMPDIR/.venv${pynum}" && \
         source "$PY_TMPDIR/.venv${pynum}/bin/activate" && \
         echo ">>> Using $(which python)"
         pip install --no-cache-dir --index-url ${PROD_IDX_URL} 'cffi>=1.0.0' && \
@@ -79,15 +79,19 @@ function test_in_venv() {
 }
 
 function delete_venv_tmpdir() {
-    read -p "Delete $PY_TMPDIR (which holds the virtualenvs)? [y/N]: " D
+    echo -n "Delete $PY_TMPDIR (which holds the virtualenvs)? [y/N]: "
+    read D
+    echo
     if [[ "$D" == "y" ]] || [[ "$D" == "Y" ]]; then
         rm -rf "$PY_TMPDIR"
     fi
 }
 
-#if [ ${USE_TEST_IDX} -eq 2 ]; then setup_local_idx; fi
+if [ ${USE_TEST_IDX} -eq 2 ]; then setup_local_idx; fi
 test_in_venv 2 || delete_venv_tmpdir
+deactivate
 test_in_venv 3 || delete_venv_tmpdir
+deactivate
 if [ ${USE_TEST_IDX} -eq 2 ]; then kill ${SVR_PROC}; fi
 delete_venv_tmpdir
 

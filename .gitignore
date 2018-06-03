@@ -3,12 +3,14 @@
 build/
 node_modules/
 .vagrant
-.local
+.local/
 Tests/EMSthreadStub.js
 dist/
 MANIFEST
 /.idea/
 /*.egg-info/
-/pip-tests/
+pip-tests/
 .conda*/
 .eggs/
+#CMakeLists.txt
+/cmake-*/

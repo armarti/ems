@@ -29,6 +29,9 @@
  |    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.             |
  |                                                                             |
  +-----------------------------------------------------------------------------*/
+#ifdef BUILD_PYTHON
+#include <Python.h>
+#endif
 #include <ems/ems.h>
 
 //==================================================================

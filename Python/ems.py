@@ -49,9 +49,16 @@ sudo apt-get install python3-cffi
 """
 THIS_DIR = os.path.realpath(os.path.dirname(__file__))
 
+# if running in a virtualenv then there is no site.getsitepackages()
+# see: https://github.com/pypa/virtualenv/issues/228
+getsitepackages = None
+if hasattr(site, 'getsitepackages'):
+    getsitepackages = site.getsitepackages
+else:
+    getsitepackages = lambda: [get_path('purelib')]
 
 ffi = FFI()
-ems_proto = os.path.join(os.path.dirname(get_path('include')), 'ems/ems_proto.h')
+ems_proto = os.path.join(os.path.dirname(get_path('include')), 'libems/ems_proto.h')
 cpp_out = subprocess.check_output(["cpp", ems_proto]).decode("utf-8")
 prototypes = cpp_out.split("\n")
 headerLines = []
@@ -60,7 +67,7 @@ for line in prototypes:
     line = re.sub("^#.*$", "", line)
     # Strip extern attribute
     line = re.sub("extern \"C\" ", "", line)
-    if line is not "":
+    if line != "":
         headerLines.append(line)
 
 # Delcare the CFFI Headers
@@ -68,7 +75,7 @@ ffi.cdef('\n'.join(headerLines))
 
 # Find the .so and load it
 libems = None
-package_paths = site.getsitepackages()
+package_paths = getsitepackages()
 for package_path in package_paths:
     try:
         packages = os.listdir(package_path)
@@ -76,14 +83,17 @@ for package_path in package_paths:
             if package == "libems" and libems is None:
                 libems_path = os.path.join(package_path, "libems")
                 files = os.listdir(libems_path)
-                for file in files:
-                    if file[-3:] == ".so":  # TODO: Guessing it's the only .so
-                        fname = os.path.join(libems_path, file)
+                for f in files:
+                    if f[-3:] == ".so":  # TODO: Guessing it's the only .so
+                        fname = os.path.join(libems_path, f)
                         libems = ffi.dlopen(fname)
                         break
     except:
         # print("This path does not exist:", package_path, "|", type (package_path))
         pass
+
+if libems is None:
+    import libems
 
 # Do not GC the EMS values until deleted
 import weakref
@@ -104,32 +114,6 @@ TAG_RW_LOCK = 3
 TAG_BUSY    = 2
 TAG_EMPTY   = 1
 TAG_FULL    = 0
-
-
-def emsThreadStub(conn, taskn):
-    """Function that receives EMS fork-join functions, executes them,
-       and returns the results."""
-    sys.path.append("../Python/")
-    global ems
-    import ems
-    ems.initialize(taskn, True, 'fj', '/tmp/fj_main.ems')
-    print("STUB: This is the start of it", taskn)
-    ems.myID = taskn
-    ems.diag("Stub diag.  Taskn=" + str(taskn) + "   myid=" + str(ems.myID))
-    while True:
-        msg = conn.recv()
-        print("CONN RECV ON", taskn)
-        func = msg['func']
-        args = msg['args']
-        if func is None:
-            print("Farewell!!!!!!!!  from ", taskn)
-            conn.close()
-            exit(0)
-        ems.diag("func=" + str(func) + "   args=" + str(args))
-        # print("func=" + str(func) + "   args=" + str(args))
-        retval = func(*args)
-        conn.send(str(retval))
-        # time.sleep(taskn * 0.01)
 
 
 def initialize(nThreadsArg, pinThreadsArg=False, threadingType='bsp',
@@ -171,7 +155,7 @@ def initialize(nThreadsArg, pinThreadsArg=False, threadingType='bsp',
                 py_ver = "python"
                 if sys.version_info[0] == 3:
                     py_ver += "3"
-                os.system('EMS_Subtask=' + str(taskN) + " " + py_ver + ' ./' + (' '.join(sys.argv)) + ' &')
+                os.system('EMS_Subtask={} {} ./{} &'.format(taskN, py_ver, ' '.join(sys.argv)))
     elif threadingType == 'fj':
         if myID == 0:
             inParallelContext = False
@@ -180,16 +164,47 @@ def initialize(nThreadsArg, pinThreadsArg=False, threadingType='bsp',
                 parent_conn, child_conn = Pipe()
                 p = Process(target=emsThreadStub, args=(child_conn, taskN), name="EMS" + str(taskN))
                 p.start()
-                print("Started job:", taskN)
+                print("Started job: {}".format(taskN))
                 tasks.append((p, parent_conn, child_conn))
         else:
             inParallelContext = True
     elif threadingType == 'user':
         inParallelContext = False
     else:
-        print("EMS ERROR: Unknown threading model type:" + str(threadingType))
+        print("EMS ERROR: Unknown threading model type: {}".format(threadingType))
         myID = -1
         return
+
+
+def diag(text):
+    """Print a message to the console with a prefix indicating which thread is printing
+    """
+    global myID, libems, EMSmmapID, _regionN, pinThreads, domainName, inParallelContext, tasks, nThreads
+    print("EMStask {}: {}".format(myID, text))
+
+
+def emsThreadStub(conn, taskn):
+    """Function that receives EMS fork-join functions, executes them,
+       and returns the results."""
+    initialize(taskn, True, 'fj', '/tmp/fj_main.ems')
+    print("STUB: This is the start of it", taskn)
+    global myID
+    myID = taskn
+    diag("Stub diag.  Taskn={}   myid={}".format(taskn, myID))
+    while True:
+        msg = conn.recv()
+        print("CONN RECV ON", taskn)
+        func = msg['func']
+        args = msg['args']
+        if func is None:
+            print("Farewell!!!!!!!!  from ", taskn)
+            conn.close()
+            exit(0)
+        diag("func={}   args={}".format(func, args))
+        # print("func=" + str(func) + "   args=" + str(args))
+        retval = func(*args)
+        conn.send(str(retval))
+        # time.sleep(taskn * 0.01)
 
 
 def _loop_chunk():
@@ -200,13 +215,6 @@ def _loop_chunk():
         diag("_loop_chunk: ERROR -- Not a valid block of iterations")
         return False
     return {'start': start[0], 'end': end[0]}
-
-
-def diag(text):
-    """Print a message to the console with a prefix indicating which thread is printing
-    """
-    global myID, libems, EMSmmapID, _regionN, pinThreads, domainName, inParallelContext, tasks, nThreads
-    print("EMStask " + str(myID) + ": " + text)
 
 
 def parallel(func, *kargs):
@@ -402,7 +410,7 @@ def new(arg0=None,   # Maximum number of elements the EMS region can hold
     if arg0 is None:  # Nothing passed in, assume length 1
         emsDescriptor.dimensions = [1]
     else:
-        if type(arg0) == dict:  # User passed in emsArrayDescriptor
+        if type(arg0) is dict:  # User passed in emsArrayDescriptor
             if 'dimensions' in arg0:
                 if type(arg0['dimensions']) == list:
                     emsDescriptor.dimensions = arg0['dimensions']
@@ -441,10 +449,10 @@ def new(arg0=None,   # Maximum number of elements the EMS region can hold
                 else:
                     emsDescriptor.setFEtagsFull = False
         else:
-            if type(arg0) == list:  # User passed in multi-dimensional array
+            if type(arg0) is list:  # User passed in multi-dimensional array
                 emsDescriptor.dimensions = arg0
             else:
-                if type(arg0) == int:  # User passed in scalar 1-D array length
+                if type(arg0) is int:  # User passed in scalar 1-D array length
                     emsDescriptor.dimensions = [arg0]
                 else:
                     print("EMSnew: ERROR Non-integer type of arg0", str(arg0), type(arg0))
@@ -456,7 +464,7 @@ def new(arg0=None,   # Maximum number of elements the EMS region can hold
             print("WARNING: New EMS array with no heap, disabling mapped keys")
             emsDescriptor.useMap = False
 
-        if type(filename) == str:
+        if type(filename) is str:
             emsDescriptor.filename = filename
 
     if not emsDescriptor.dimensions:
@@ -469,7 +477,7 @@ def new(arg0=None,   # Maximum number of elements the EMS region can hold
 
     # Name the region if a name wasn't given
     if not emsDescriptor.filename:
-        emsDescriptor.filename = '/EMS_region_' + str(_regionN)
+        emsDescriptor.filename = '/EMS_region_{}'.format(_regionN)
         emsDescriptor.persist = False
 
     if emsDescriptor.useExisting:
@@ -477,7 +485,7 @@ def new(arg0=None,   # Maximum number of elements the EMS region can hold
             fh = open(str(emsDescriptor.filename), 'r')
             fh.close()
         except Exception as err:
-            print("EMS ERROR: file " + str(emsDescriptor.filename) + " should already exist, but does not. " + str(err))
+            print("EMS ERROR: file {} should already exist, but does not. {}".format(emsDescriptor.filename, err))
             return
 
     # init() is first called from thread 0 to perform one-thread
@@ -530,8 +538,8 @@ def _new_EMSval(val):
     global global_weakkeydict
     emsval = ffi.new("EMSvalueType *")
     emsval[0].length = 0
-    if type(val) == str:
-        if sys.version_info[0] == 2:  # Python 2 or 3
+    if type(val) is str:
+        if sys.version_info[0] in (2, 3):  # Python 2 or 3
             newval = ffi.new('char []', bytes(val))
         else:
             newval = ffi.new('char []', bytes(val, 'utf-8'))
@@ -539,18 +547,32 @@ def _new_EMSval(val):
         emsval[0].length = len(newval) + 1
         emsval[0].type = TYPE_STRING
         global_weakkeydict[emsval] = (emsval[0].length, emsval[0].type, emsval[0].value, newval)
-    elif type(val) == int:
+
+    elif type(val) is int:
         emsval[0].type = TYPE_INTEGER
         emsval[0].value = ffi.cast('void *', val)
-    elif type(val) == float:
+
+    elif type(val) is float:
         emsval[0].type = TYPE_FLOAT
         ud_tmp = ffi.new('EMSulong_double *')
         ud_tmp[0].d = ffi.cast('double', val)
         emsval[0].value = ffi.cast('void *', ud_tmp[0].u64)
-    elif type(val) == bool:
+
+    elif type(val) is bool:
         emsval[0].type = TYPE_BOOLEAN
         emsval[0].value = ffi.cast('void *', val)
-    elif type(val) == list:
+
+    elif type(val) is list:
+        if sys.version_info[0] in (2, 3):  # Python 2 or 3
+            newval = ffi.new('char []', bytes(json.dumps(val)))
+        else:
+            newval = ffi.new('char []', bytes(json.dumps(val), 'utf-8'))
+        emsval[0].value = newval
+        emsval[0].length = len(newval) + 1
+        emsval[0].type = TYPE_JSON
+        global_weakkeydict[emsval] = (emsval[0].length, emsval[0].type, emsval[0].value, newval)
+
+    elif type(val) is dict:
         if sys.version_info[0] == 2:  # Python 2 or 3
             newval = ffi.new('char []', bytes(json.dumps(val)))
         else:
@@ -559,21 +581,15 @@ def _new_EMSval(val):
         emsval[0].length = len(newval) + 1
         emsval[0].type = TYPE_JSON
         global_weakkeydict[emsval] = (emsval[0].length, emsval[0].type, emsval[0].value, newval)
-    elif type(val) == dict:
-        if sys.version_info[0] == 2:  # Python 2 or 3
-            newval = ffi.new('char []', bytes(json.dumps(val)))
-        else:
-            newval = ffi.new('char []', bytes(json.dumps(val), 'utf-8'))
-        emsval[0].value = newval
-        emsval[0].length = len(newval) + 1
-        emsval[0].type = TYPE_JSON
-        global_weakkeydict[emsval] = (emsval[0].length, emsval[0].type, emsval[0].value, newval)
+
     elif val is None:
         emsval[0].type = TYPE_UNDEFINED
         emsval[0].value = ffi.cast('void *', 0xdeadbeef)
+
     else:
         print("EMS ERROR - unknown type of value:", type(val), val)
         return None
+
     return emsval
 
 
@@ -629,11 +645,13 @@ class EMSarray(object):
 
     def _returnData(self, emsval):
         global myID, libems, EMSmmapID, _regionN, pinThreads, domainName, inParallelContext, tasks, nThreads
+
         if emsval[0].type == TYPE_STRING:
             if sys.version_info[0] == 2:  # Python 2 or 3
                 return ffi.string(ffi.cast("char *", emsval[0].value))
             else:
                 return ffi.string(ffi.cast('char *', emsval[0].value)).decode('utf-8')
+
         elif emsval[0].type == TYPE_JSON:
             if sys.version_info[0] == 2:  # Python 2 or 3
                 json_str = ffi.string(ffi.cast("char *", emsval[0].value))
@@ -641,16 +659,21 @@ class EMSarray(object):
                 json_str = ffi.string(ffi.cast('char *', emsval[0].value)).decode('utf-8')
             tmp_str = "{\"data\":" + json_str + "}"
             return json.loads(tmp_str)['data']
+
         elif emsval[0].type == TYPE_INTEGER:
             return int(ffi.cast('int64_t', emsval[0].value))
+
         elif emsval[0].type == TYPE_FLOAT:
             ud_tmp = ffi.new('EMSulong_double *')
             ud_tmp[0].u64 = ffi.cast('uint64_t', emsval[0].value)
             return ud_tmp[0].d
+
         elif emsval[0].type == TYPE_BOOLEAN:
             return bool(int(ffi.cast('uint64_t', emsval[0].value)))
+
         elif emsval[0].type == TYPE_UNDEFINED:
             return None
+
         else:
             print("EMS ERROR - unknown type of value:", type(emsval), emsval)
             return None
@@ -781,7 +804,7 @@ class EMSarray(object):
                 idx += index * self.dimStride[rank]
                 rank += 1
         else:
-            if not type(indexes) == int  and  not self.useMap:  #  If no map, only use integers
+            if not type(indexes) == int  and  not self.useMap:  # If no map, only use integers
                 print("EMS ERROR: Non-integer index used, but EMS memory was not configured to use a map (useMap)",
                       indexes, type(indexes), self.useMap)
                 idx = -1
@@ -793,7 +816,7 @@ class EMSarray(object):
         return self.read(attr)
 
     def __setattr__(self, attr, value):
-        if not '_EMSarray__initialised' in self.__dict__ or attr in self.__dict__:
+        if '_EMSarray__initialised' not in self.__dict__ or attr in self.__dict__:
             # Ignore object initialization and normal attribute access
             return dict.__setattr__(self, attr, value)
         else:

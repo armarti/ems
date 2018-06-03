@@ -36,10 +36,9 @@ import sys
 import os
 import platform
 from glob import glob
-import shutil
 
-PACKAGE_NAME = "ems" + "_test2"
-PACKAGE_VERSION = "1.4.1" + "4"
+PACKAGE_NAME = "libems"
+PACKAGE_VERSION = "1.4.1" + ".1"
 REPO_ROOT_DIR = os.path.realpath(os.path.dirname(__file__))
 THIS_DIR = REPO_ROOT_DIR
 SRC_DIR = os.path.join(THIS_DIR, 'src')
@@ -48,9 +47,9 @@ MODULE_DIR = os.path.join(THIS_DIR, 'Python')
 
 # OS Specific link flags
 link_args = []
-if sys.platform == "linux" or sys.platform == "linux2":
+if sys.platform in ("linux", "linux2"):
     link_args.append("-lrt")
-elif sys.platform == "darwin":
+elif sys.platform in ("darwin",):
     os.environ['MACOSX_DEPLOYMENT_TARGET'] = '.'.join(platform.mac_ver()[0].split('.')[:2])
     link_args.append("-stdlib=libc++")
 else:
@@ -75,15 +74,18 @@ setup(
     url='https://github.com/SyntheticSemantics/ems',
 
     data_files=[
-        ('include/ems', glob(os.path.join(THIS_DIR, 'include/ems/**ems*.h'))),
+        ('include/{}'.format(PACKAGE_NAME), glob(os.path.join(THIS_DIR, 'include/ems/ems*.h'))),
     ],
 
     ext_modules=[
         Extension(
-            "{pkg}/lib{pkg}".format(pkg=PACKAGE_NAME),
+            "{pkg}/{pkg}".format(pkg=PACKAGE_NAME),
             sources=[os.path.relpath(os.path.join(SRC_DIR, src), THIS_DIR) for src in os.listdir(SRC_DIR)],
             extra_link_args=link_args,
             include_dirs=[os.path.relpath(INCLUDE_DIR, THIS_DIR)],
+            define_macros=[
+                # ('BUILD_PYTHON', None),
+            ],
         ),
     ],
     long_description='Persistent Shared Memory and Parallel Programming Model',
