@@ -6,7 +6,12 @@ set(PY_VERSION "3.5")
 add_definitions(-DBUILD_PYTHON)
 project(${PROJECT_NAME} VERSION ${PROJECT_VERSION})
 
-set(PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.conda${PY_VERSION}/bin/python${PY_VERSION}")
+if(${WIN32})
+    set(PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.conda${PY_VERSION}/python.exe")
+else()
+    set(PYTHON_EXECUTABLE "${CMAKE_SOURCE_DIR}/.conda${PY_VERSION}/bin/python${PY_VERSION}")
+endif() 
+    
 find_package(PythonInterp ${PY_VERSION} REQUIRED)
 find_package(PythonLibs ${PY_VERSION} REQUIRED)
 
