@@ -32,14 +32,31 @@
 #ifndef EMSPROJ_EMS_H
 #define EMSPROJ_EMS_H
 #define __STDC_FORMAT_MACROS 1
+
+#ifdef MS_WIN32
+#   include <Windows.h>
+#endif
+
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
 #include <inttypes.h>
-#include <sys/mman.h>
+
+#ifdef MS_WIN32
+#   include <memoryapi.h>
+#else
+#   include <sys/mman.h>
+#endif
+
 #include <math.h>
 #include <stdlib.h>
-#include <unistd.h>
+
+#ifdef MS_WIN32
+#   include <io.h>
+#else
+#   include <unistd.h>
+#endif
+
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -48,7 +65,12 @@
 #if !defined _GNU_SOURCE
 #  define _GNU_SOURCE
 #endif
-#include <sched.h>
+
+#ifdef MS_WIN32
+#   include <process.h>
+#else
+#   include <sched.h>
+#endif
 
 #include "ems_alloc.h"
 

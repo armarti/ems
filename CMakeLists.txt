@@ -16,17 +16,18 @@ find_package(PythonInterp ${PY_VERSION} REQUIRED)
 find_package(PythonLibs ${PY_VERSION} REQUIRED)
 
 set(SOURCES
-    "src/ems.cc"
-    "src/collectives.cc"
-    "src/ems_alloc.cc"
-    "src/loops.cc"
-    "src/primitives.cc"
-    "src/rmw.cc"
-    "include/ems/ems.h"
-    "include/ems/ems_alloc.h"
-    "include/ems/ems_proto.h"
-    "include/ems/ems_types.h"
-    "include/ems/nodejs.h"
+    src/ems.cc
+    src/collectives.cc
+    src/ems_alloc.cc
+    src/loops.cc
+    src/primitives.cc
+    src/rmw.cc
+    include/ems/ems.h
+    include/ems/ems_alloc.h
+    include/ems/ems_proto.h
+    include/ems/ems_types.h
+    include/ems/nodejs.h
+    include/ems/ems_win.h
 )
 
 include_directories(${PROJECT_NAME}
